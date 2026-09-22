@@ -1,0 +1,26 @@
+info:
+  name: 03 - Cadastrar
+  type: http
+  seq: 4
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/treinos"
+  body:
+    type: json
+    data: |-
+      {
+        "nome": "Treino C - Pernas",
+        "grupoMuscular": "Pernas",
+        "series": 4,
+        "repeticoes": 10,
+        "carga": 40.0
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
