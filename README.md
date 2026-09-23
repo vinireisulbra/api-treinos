@@ -50,4 +50,4 @@ Os testes de todos os endpoints foram feitos com o **Bruno**. A Collection utili
 
 ## Vídeo de demonstração
 
-[Link do vídeo aqui]
+[\[Link do vídeo aqui\]](https://drive.google.com/file/d/1pSnKkNs5XXhI3IXExXjFp8tN2Lnl7vaG/view?usp=sharing)
