@@ -1,23 +1,24 @@
+using Microsoft.EntityFrameworkCore;
+
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseSqlite("Data Source=treinos.db"));
+
 var app = builder.Build();
+app.UseDefaultFiles();
+app.UseStaticFiles();
 
-// Rota raiz - confirma que a API está no ar
-app.MapGet("/", () => "API de Controle de Treinos está no ar!");
 
-// Lista de treinos em memória, com dois registros iniciais
-var treinos = new List<TreinoDto>
+app.MapGet("/api/treinos", async (AppDbContext db) =>
 {
-    new TreinoDto(1, "Treino A - Peito e Tríceps", "Peito", 4, 12, 20.0m),
-    new TreinoDto(2, "Treino B - Costas e Bíceps", "Costas", 3, 10, 15.0m)
-};
+    var treinos = await db.Treinos.ToListAsync();
+    return Results.Ok(treinos);
+});
 
-// GET /api/treinos - lista todos os treinos
-app.MapGet("/api/treinos", () => Results.Ok(treinos));
-
-// GET /api/treinos/{id} - busca um treino específico
-app.MapGet("/api/treinos/{id}", (int id) =>
+app.MapGet("/api/treinos/{id}", async (int id, AppDbContext db) =>
 {
-    var treino = treinos.FirstOrDefault(t => t.Id == id);
+    var treino = await db.Treinos.FindAsync(id);
 
     if (treino is null)
     {
@@ -27,66 +28,58 @@ app.MapGet("/api/treinos/{id}", (int id) =>
     return Results.Ok(treino);
 });
 
-// POST /api/treinos - cria um novo treino
-app.MapPost("/api/treinos", (TreinoEntradaDto dados) =>
+app.MapPost("/api/treinos", async (TreinoEntradaDto dados, AppDbContext db) =>
 {
-    int proximoId = treinos.Count > 0 ? treinos.Max(t => t.Id) + 1 : 1;
-
-    var novoTreino = new TreinoDto(
-        proximoId,
-        dados.Nome,
-        dados.GrupoMuscular,
-        dados.Series,
-        dados.Repeticoes,
-        dados.Carga
-    );
-
-    treinos.Add(novoTreino);
-
-    return Results.Created($"/api/treinos/{novoTreino.Id}", novoTreino);
-});
-
-// PUT /api/treinos/{id} - atualiza um treino existente
-app.MapPut("/api/treinos/{id}", (int id, TreinoEntradaDto dados) =>
-{
-    var index = treinos.FindIndex(t => t.Id == id);
-
-    if (index == -1)
+    var treino = new Treino
     {
-        return Results.NotFound();
-    }
+        Nome = dados.Nome,
+        GrupoMuscular = dados.GrupoMuscular,
+        Series = dados.Series,
+        Repeticoes = dados.Repeticoes,
+        Carga = dados.Carga
+    };
 
-    var treinoAtualizado = new TreinoDto(
-        id,
-        dados.Nome,
-        dados.GrupoMuscular,
-        dados.Series,
-        dados.Repeticoes,
-        dados.Carga
-    );
+    db.Treinos.Add(treino);
+    await db.SaveChangesAsync();
 
-    treinos[index] = treinoAtualizado;
-
-    return Results.Ok(treinoAtualizado);
+    return Results.Created($"/api/treinos/{treino.Id}", treino);
 });
 
-// DELETE /api/treinos/{id} - remove um treino
-app.MapDelete("/api/treinos/{id}", (int id) =>
+app.MapPut("/api/treinos/{id}", async (int id, TreinoEntradaDto dados, AppDbContext db) =>
 {
-    var treino = treinos.FirstOrDefault(t => t.Id == id);
+    var treino = await db.Treinos.FindAsync(id);
 
     if (treino is null)
     {
         return Results.NotFound();
     }
 
-    treinos.Remove(treino);
+    treino.Nome = dados.Nome;
+    treino.GrupoMuscular = dados.GrupoMuscular;
+    treino.Series = dados.Series;
+    treino.Repeticoes = dados.Repeticoes;
+    treino.Carga = dados.Carga;
+
+    await db.SaveChangesAsync();
+
+    return Results.Ok(treino);
+});
+
+app.MapDelete("/api/treinos/{id}", async (int id, AppDbContext db) =>
+{
+    var treino = await db.Treinos.FindAsync(id);
+
+    if (treino is null)
+    {
+        return Results.NotFound();
+    }
+
+    db.Treinos.Remove(treino);
+    await db.SaveChangesAsync();
 
     return Results.NoContent();
 });
 
 app.Run();
 
-// DTOs - formato dos dados
-record TreinoDto(int Id, string Nome, string GrupoMuscular, int Series, int Repeticoes, decimal Carga);
 record TreinoEntradaDto(string Nome, string GrupoMuscular, int Series, int Repeticoes, decimal Carga);

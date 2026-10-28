@@ -1,53 +1,58 @@
 # API de Controle de Treinos
 
-## Objetivo
-
-API REST desenvolvida como trabalho AP1 da disciplina de Desenvolvimento Backend. O sistema gerencia treinos de academia, permitindo cadastrar, listar, buscar, atualizar e remover registros de treino (CRUD completo).
+API em ASP.NET Core (.NET 10) com Entity Framework Core e SQLite para cadastrar treinos de academia, com interface web integrada (mesma origem da API).
 
 ## Requisitos
 
 - .NET SDK 10
+- Ferramenta do EF Core: `dotnet tool install --global dotnet-ef`
 
-## Como executar
+## Preparar o banco
+
+Na pasta `ApiTreinos`:
 
 ```
-dotnet restore
-dotnet run --urls http://localhost:5050
+dotnet ef database update
 ```
 
-A API ficará disponível em: `http://localhost:5050`
+Isso cria o arquivo `treinos.db` a partir das migrations versionadas.
 
-## Endpoints
+## Executar
 
-| Método | Rota | Descrição |
-|--------|------|-----------|
-| GET | `/` | Confirma que a API está no ar |
-| GET | `/api/treinos` | Lista todos os treinos |
-| GET | `/api/treinos/{id}` | Busca um treino pelo id |
-| POST | `/api/treinos` | Cadastra um novo treino |
-| PUT | `/api/treinos/{id}` | Atualiza um treino existente |
-| DELETE | `/api/treinos/{id}` | Remove um treino |
+```
+dotnet run --urls http://localhost:5070
+```
 
-## Exemplo de JSON — POST e PUT
+## Abrir a interface
+
+Acesse http://localhost:5070 no navegador. A tela lista, cadastra, edita e exclui treinos usando a API real.
+
+## Rotas da API
+
+| Método | Rota | Descrição | Resposta |
+|--------|------|-----------|----------|
+| GET | /api/treinos | Lista todos os treinos | 200 |
+| GET | /api/treinos/{id} | Busca um treino por id | 200 ou 404 |
+| POST | /api/treinos | Cadastra um treino | 201 |
+| PUT | /api/treinos/{id} | Atualiza um treino | 200 ou 404 |
+| DELETE | /api/treinos/{id} | Exclui um treino | 204 ou 404 |
+
+Exemplo de corpo (POST e PUT):
 
 ```json
 {
   "nome": "Treino C - Pernas",
   "grupoMuscular": "Pernas",
   "series": 4,
-  "repeticoes": 10,
-  "carga": 40.0
+  "repeticoes": 12,
+  "carga": 30
 }
 ```
 
-## Observação sobre os dados
+## Testes da API
 
-Os dados são armazenados em uma `List<TreinoDto>` em memória. Isso significa que **todos os registros são perdidos quando a aplicação é reiniciada**. Não há banco de dados nesta etapa do projeto.
+A collection do Bruno está na pasta `bruno/` e cobre GET da lista, GET por id, POST, PUT, DELETE e o 404 após excluir. Ela usa a porta 5070.
 
-## Testes
+## Vídeo de demonstração — AP2
 
-Os testes de todos os endpoints foram feitos com o **Bruno**. A Collection utilizada está disponível na pasta [`bruno/`](./bruno) deste repositório.
-
-## Vídeo de demonstração
-
-[\[Link do vídeo aqui\]](https://drive.google.com/file/d/1pSnKkNs5XXhI3IXExXjFp8tN2Lnl7vaG/view?usp=sharing)
+COLE_AQUI_O_LINK_DO_VIDEO

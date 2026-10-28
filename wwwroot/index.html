@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Controle de Treinos</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f4f4f4; margin: 0; padding: 24px; color: #222; }
+    main { max-width: 900px; margin: 0 auto; background: #fff; padding: 24px; border-radius: 8px; }
+    h1 { margin-top: 0; }
+    form { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 12px; }
+    label { display: flex; flex-direction: column; font-size: 14px; gap: 4px; }
+    input { padding: 8px; border: 1px solid #bbb; border-radius: 4px; }
+    .botoes { display: flex; gap: 8px; align-items: end; }
+    button { padding: 8px 12px; border: 0; border-radius: 4px; cursor: pointer; background: #2563eb; color: #fff; }
+    button.secundario { background: #6b7280; }
+    button.perigo { background: #dc2626; }
+    #msg { min-height: 24px; font-weight: bold; color: #15803d; }
+    #msg.erro { color: #dc2626; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { text-align: left; padding: 8px; border-bottom: 1px solid #ddd; }
+    td:last-child { display: flex; gap: 6px; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Controle de Treinos</h1>
+
+    <form id="form">
+      <input type="hidden" id="id">
+      <label>Nome do treino <input id="nome" required></label>
+      <label>Grupo muscular <input id="grupoMuscular" required></label>
+      <label>Séries <input id="series" type="number" min="1" required></label>
+      <label>Repetições <input id="repeticoes" type="number" min="1" required></label>
+      <label>Carga (kg) <input id="carga" type="number" min="0" step="0.5" required></label>
+      <div class="botoes">
+        <button type="submit" id="salvar">Cadastrar</button>
+        <button type="button" id="cancelar" class="secundario" hidden>Cancelar edição</button>
+      </div>
+    </form>
+
+    <p id="msg"></p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Id</th><th>Nome</th><th>Grupo</th><th>Séries</th><th>Reps</th><th>Carga</th><th>Ações</th>
+        </tr>
+      </thead>
+      <tbody id="lista"></tbody>
+    </table>
+  </main>
+
+  <script>
+    // Mesma origem da API, então basta o caminho relativo
+    const API = '/api/treinos';
+
+    const form = document.getElementById('form');
+    const lista = document.getElementById('lista');
+    const msg = document.getElementById('msg');
+    const botaoSalvar = document.getElementById('salvar');
+    const botaoCancelar = document.getElementById('cancelar');
+
+    const campoId = document.getElementById('id');
+    const campoNome = document.getElementById('nome');
+    const campoGrupo = document.getElementById('grupoMuscular');
+    const campoSeries = document.getElementById('series');
+    const campoReps = document.getElementById('repeticoes');
+    const campoCarga = document.getElementById('carga');
+
+    function mostrarMensagem(texto, erro = false) {
+      msg.textContent = texto;
+      msg.className = erro ? 'erro' : '';
+    }
+
+    function limparFormulario() {
+      form.reset();
+      campoId.value = '';
+      botaoSalvar.textContent = 'Cadastrar';
+      botaoCancelar.hidden = true;
+    }
+
+    // GET: lista os treinos vindos do banco
+    async function carregar() {
+      const resp = await fetch(API);
+      const treinos = await resp.json();
+
+      lista.replaceChildren();
+
+      for (const t of treinos) {
+        const tr = document.createElement('tr');
+
+        for (const valor of [t.id, t.nome, t.grupoMuscular, t.series, t.repeticoes, t.carga]) {
+          const td = document.createElement('td');
+          td.textContent = valor;
+          tr.appendChild(td);
+        }
+
+        const tdAcoes = document.createElement('td');
+
+        const botaoEditar = document.createElement('button');
+        botaoEditar.textContent = 'Editar';
+        botaoEditar.addEventListener('click', () => editar(t));
+
+        const botaoExcluir = document.createElement('button');
+        botaoExcluir.textContent = 'Excluir';
+        botaoExcluir.className = 'perigo';
+        botaoExcluir.addEventListener('click', () => excluir(t.id));
+
+        tdAcoes.append(botaoEditar, botaoExcluir);
+        tr.appendChild(tdAcoes);
+        lista.appendChild(tr);
+      }
+    }
+
+    // Preenche o formulário com o treino escolhido
+    function editar(t) {
+      campoId.value = t.id;
+      campoNome.value = t.nome;
+      campoGrupo.value = t.grupoMuscular;
+      campoSeries.value = t.series;
+      campoReps.value = t.repeticoes;
+      campoCarga.value = t.carga;
+      botaoSalvar.textContent = 'Salvar alteração';
+      botaoCancelar.hidden = false;
+      mostrarMensagem('Editando o treino ' + t.id);
+    }
+
+    // POST (cadastrar) ou PUT (editar)
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const dados = {
+        nome: campoNome.value,
+        grupoMuscular: campoGrupo.value,
+        series: Number(campoSeries.value),
+        repeticoes: Number(campoReps.value),
+        carga: Number(campoCarga.value)
+      };
+
+      const id = campoId.value;
+      const url = id ? API + '/' + id : API;
+      const metodo = id ? 'PUT' : 'POST';
+
+      const resp = await fetch(url, {
+        method: metodo,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(dados)
+      });
+
+      if (!resp.ok) {
+        mostrarMensagem('Erro ao salvar (status ' + resp.status + ')', true);
+        return;
+      }
+
+      mostrarMensagem(id ? 'Treino atualizado!' : 'Treino cadastrado!');
+      limparFormulario();
+      await carregar();
+    });
+
+    // DELETE: remove o treino do banco
+    async function excluir(id) {
+      if (!confirm('Excluir o treino ' + id + '?')) {
+        return;
+      }
+
+      const resp = await fetch(API + '/' + id, { method: 'DELETE' });
+
+      if (resp.status !== 204) {
+        mostrarMensagem('Erro ao excluir (status ' + resp.status + ')', true);
+        return;
+      }
+
+      mostrarMensagem('Treino excluído!');
+      await carregar();
+    }
+
+    botaoCancelar.addEventListener('click', () => {
+      limparFormulario();
+      mostrarMensagem('');
+    });
+
+    carregar();
+  </script>
+</body>
+</html>
